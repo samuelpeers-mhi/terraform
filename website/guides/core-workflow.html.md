@@ -18,8 +18,8 @@ The core Terraform workflow has three steps:
 
 This guide walks through how each of these three steps plays out in the context
 of working as an individual practitioner, how they evolve when a team is
-collaborating on infrastructure, and how Terraform Enterprise 
-organization.
+collaborating on infrastructure, and how Terraform Enterprise enables this
+workflow to run smoothly for entire organizations.
 
 ## Working as an Individual Practitioner
  
@@ -49,8 +49,9 @@ Initializing provider plugins...
 Terraform has been successfully initialized!
 ```
 
-As you make progress on authoring config, running plans can help flush out
-syntax errors and ensure that your config is coming together as you expect.
+As you make progress on authoring your config, repeatedly running plans can help
+flush out syntax errors and ensure that your config is coming together as you
+expect.
 
 ```sh
 # Make edits to config
@@ -107,10 +108,10 @@ Do you want to perform these actions?
 Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 ```
 
-At this point, it's common to want to push your version control repository to a
-remote location for safekeeping.
+At this point, it's common to push your version control repository to a remote
+location for safekeeping.
 
-```
+```sh
 $ git remote add origin https://github.com/*user*/*repo*.git
 $ git push origin master
 ```
@@ -126,17 +127,17 @@ Terraform enabling infrastructure as code.
 
 Once multiple people are collaborating on Terraform configuration, new steps
 must be added to each part of the core workflow to ensure everyone is working
-together properly. You'll see that many of these steps parallel the workflow
+together smoothly. You'll see that many of these steps parallel the workflow
 changes we make when we work on application code as teams rather than as
 individuals.
 
 ### Write
 
 While each individual on a team still makes changes to Terraform configuration
-in their editor of choice, they save their changes to version control branches
+in their editor of choice, they save their changes to version control _branches_
 to avoid colliding with each other's work.
 
-```
+```sh
 $ git checkout -b add-load-balancer
 
 Switched to a new branch 'add-load-balancer'
