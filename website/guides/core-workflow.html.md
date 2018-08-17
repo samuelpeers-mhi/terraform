@@ -135,7 +135,9 @@ individuals.
 
 While each individual on a team still makes changes to Terraform configuration
 in their editor of choice, they save their changes to version control _branches_
-to avoid colliding with each other's work.
+to avoid colliding with each other's work. Working in branches enables team
+members to resolve mutually incompatible infrastructure changes using their
+normal merge conflict workflow.
 
 ```sh
 $ git checkout -b add-load-balancer
@@ -152,10 +154,18 @@ required to run a plan.
 To avoid the burden and the security risk of each team member arranging all
 sensitive inputs locally, it's common for teams to migrate to a model in which
 Terraform operations are executed in a shared Continuous Integration (CI)
-environment. This longer iteration cycle of committing changes to VCS and
-waiting for the CI pipeline to execute often raises the barrier to speculative
-plans so much that they are no longer used by team members as a feedback
-mechanism while authoring Terraform configuration.
+environment. The work needed to create such a CI environment is nontrivial, and
+is outside the scope of this core workflow overview, but a full deep dive on
+this topic can be found in our
+[Running Terraform in Automation](https://www.terraform.io/guides/running-terraform-in-automation.html)
+guide.
+
+This longer iteration cycle of committing changes to version control and then
+waiting for the CI pipeline to execute is often lengthy enough to prohibit using
+speculative plans as a feedback loop while authoring individual Terraform
+configuration changes. Speculative plans are still useful before new Terraform
+changes are applied or even merged to the main development branch, however, as
+we'll see in a minute.
 
 ### Plan
 
@@ -164,17 +174,20 @@ opportunity for team members to review each other's work. This allows the team
 to ask questions, evaluate risks, and catch mistakes before any potentially
 harmful changes are made.
 
-The natural site for these reviews to occur is alongside pull requests within
+The natural place for these reviews to occur is alongside pull requests within
 version control--the point at which an individual proposes a merge from their
 working branch to the shared team branch. If team members review proposed
 config changes alongside speculative plan output, they can evaluate whether the
 intent of the change is being achieved by the plan.
 
-The problem becomes acquiring that speculative plan output for the team to
+The problem becomes producing that speculative plan output for the team to
 review. Some teams that still run Terraform locally make a practice that pull
 requests should include an attached copy of speculative plan output generated
 by the change author. Others arrange for their CI system to post speculative
 plan output to pull requests automatically.
+
+    [ Screenshot of example PR with code diffs and manually pasted plan output ]
+    [ Screenshot of example PR with code diffs and CI system posted output ]
 
 In addition to reviewing the plan for the proper expression of its author's
 intent, the team can also make an evaluation whether they want this change to
@@ -182,13 +195,24 @@ happen now. For example, if a team notices that a certain change could result
 in service disruption, they may decide to delay merging its pull request until
 they can schedule a maintenance window.
 
+    [ ktagg confused; re: the above paragraph and deciding to run it now,
+     but then we go on in the next section to say it's important to do a plan
+     against the master branch before making such a decision? ]
+
 ### Create
 
 Once a pull request has been approved and merged, it's important for the team
 to review the final concrete plan that's run against the shared team branch and
-the latest version of the state file. This plan has the potential to be
-different than the one reviewed on the pull request due to issues like merge
-order or recent infrastructural changes.
+the latest version of the state file.
+
+    [ Screenshot showing in the command line or GH which branch to run against ]
+    [ like: run against this -> master branch! not the old my-changes branch! ]
+
+This plan has the potential to be different than the one reviewed on the pull
+request due to issues like merge order or recent infrastructural changes.
+
+    [ example of this? having trouble imagining in detail what things careful
+     merging would fail to prevent ]
 
 It is at this point that the team asks questions about the potential
 implications of applying the change. Do we expect any service disruption from
@@ -201,16 +225,21 @@ output as it is happening. For teams that are running Terraform locally, this
 may involve a screen share with the team. For teams running Terraform in CI,
 this may involve gathering around the build log.
 
+    [ Screenshots of both or either of these examples of log outputs ]
+
 Just like the workflow for individuals, the core workflow for teams is a loop
 that plays out for each change. For some teams this loop happens a few times a
 week, for others, many times a day.
 
 ## The Core Workflow Enhanced by Terraform Enterprise
 
-We designed Terraform Enterprise to support and enhance the core Terraform
-workflow for anyone collaborating on infrastructure, from small teams to large
-organizations. Let's look at how Terraform Enterprise makes for a better
-experience at each step.
+While the above described workflows enable the safe, predictable, and
+reproducible creating or changing of infrastructure, there are multiple
+collaboration points that can be streamlined, especially as teams and
+organizations scale.  We designed Terraform Enterprise to support and enhance
+the core Terraform workflow for anyone collaborating on infrastructure, from
+small teams to large organizations. Let's look at how Terraform Enterprise makes
+for a better experience at each step.
 
 ### Write
 
@@ -256,6 +285,9 @@ Plan: 1 to add, 0 to change, 0 to destroy.
 
 ### Plan
 
+    [ ktagg confusion: wait how did we get to pull requests? do those still
+     happen in GitHub/etc or is there some fanciness that pulls that into TFE? ]
+
 Once a pull request is ready for review, Terraform Enterprise makes the process
 of reviewing a speculative plan easier for team members. First, the plan is
 automatically run when the pull request is created. Status updates to the pull
@@ -265,6 +297,9 @@ request indicate while the plan is in progress.
 
 Once the plan is complete, the status update indicates whether there were any
 changes in the speculative plan, right from the pull request view.
+
+    [ ktagg confusion: "no changes" compared to what? compared to the previous
+     individual change? compared to the collaborative state file? ]
 
     [ Multi-screenshot of "No Changes." and "1 to add, 0 to change, 0 to destroy." status updates. ]
 
@@ -283,17 +318,23 @@ config author's intent and evaluate the risk of the change.
 
 ### Apply
 
+    [ ktagg confusion: the individual and team stories have "Create" as headings
+     and I think they should all be the same. +1 from me for "Apply" being it ]
+
 After merge, Terraform Enterprise presents the concrete plan to the team for
 review and approval.
 
-    [ Screenshot of Slack alert indicating plan needs approval ]
+    [ Screenshot of Slack alert indicating plan needs approval;
+     except it's not gonna be Slack anymore? ]
+
+    [ Screenshot of the concrete plan being presented in TFE ]
 
 The team can discuss any outstanding questions about the plan before the change
 is made.
 
     [ Screenshot of back-and-forth in TFE comments ]
 
-Once the Apply is kicked off, Terraform Enterprise displays the progress live
+Once the Apply is confirmed, Terraform Enterprise displays the progress live
 to anyone who'd like to watch.
 
     [ Screenshot of in-progress Apply ]
@@ -301,13 +342,13 @@ to anyone who'd like to watch.
 And after the change completes, the team can be notified of its outcome.
 
     [ Multi-screenshot of Slack alert indicating Apply completed successfully and
-    with error ]
+    with error; except it's not gonna be Slack anymore? ]
 
 ## Conclusion
 
-We have designed Terraform Enterprise to provide the best experience for teams
-collaborating on infrastructure with the core Terraform workflow, and we are
-continuously honing and improving that experience every day.
-
-Terraform Enterprise also allows us to introduce new layers that build on this
-core workflow to solve problems for organizations using Terraform at scale.
+There are many different ways to use Terraform: as an individual user, a single
+team, or an entire organization at scale. Choosing the best approach for the
+density of collaboration needed will provide the most return on your investment
+in the core Terraform workflow. For organizations using Terraform at scale,
+Terraform Enterprise introduces new layers that build on this core workflow to
+solve problems unique to teams and organizations.
